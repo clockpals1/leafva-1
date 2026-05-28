@@ -1,0 +1,111 @@
+{
+  "brand": {
+    "name": "LEAFVA",
+    "tagline": "IT Intelligence, Powered by Nature and Technology",
+    "archetype": "5 (Luxury) & 4 (Swiss & High-Contrast)",
+    "theme": "dark",
+    "aesthetic_public": "Premium, futuristic, corporate-grade marketing site with high-impact visual storytelling. Tesla-like presence. Dark charcoal background with deep forest green depth and gold highlights. Glassmorphism and bento grids for content.",
+    "aesthetic_dashboard": "Data-dense, professional ERP. Linear/Notion-like structure but skinned in dark mode with subtle green/gold accents. High contrast text, minimal borders, extremely clean layout.",
+    "logo_concept": "Stylized leaf combined with tech signature (circuit lines, digital glow). Animated subtly on hover."
+  },
+  "colors": {
+    "background_main": "#0A0A0A",
+    "background_dashboard": "#111111",
+    "surface": "#1A1A1A",
+    "surface_glass": "rgba(26, 26, 26, 0.6)",
+    "primary": "#0B4A2D",
+    "primary_hover": "#11653F",
+    "accent_gold": "#D4AF37",
+    "accent_gold_glow": "rgba(212, 175, 55, 0.4)",
+    "natural_beam": "#EAE0C8",
+    "text_main": "#F3F4F6",
+    "text_muted": "#9CA3AF",
+    "border_subtle": "rgba(255, 255, 255, 0.08)",
+    "border_active": "rgba(212, 175, 55, 0.3)"
+  },
+  "typography": {
+    "font_pairing": "Outfit (Headings) + Manrope (Body)",
+    "headings": {
+      "family": "'Outfit', sans-serif",
+      "weight": "300, 500, 700",
+      "tracking": "-0.02em"
+    },
+    "body": {
+      "family": "'Manrope', sans-serif",
+      "weight": "400, 500"
+    },
+    "sizes": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm uppercase tracking-widest text-text_muted"
+    }
+  },
+  "spacing_and_layout": {
+    "public_site": {
+      "section_padding": "py-24 lg:py-32",
+      "container": "max-w-7xl mx-auto px-6 lg:px-8",
+      "grid": "grid grid-cols-1 md:grid-cols-12 gap-8",
+      "card_padding": "p-8 md:p-12"
+    },
+    "dashboard": {
+      "sidebar_width": "w-64",
+      "content_padding": "p-6 md:p-8",
+      "grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+      "card_padding": "p-4 md:p-6"
+    }
+  },
+  "components": {
+    "hero": {
+      "animation_concept": "Scale-in background image with overlay. Staggered fade-up text. The stylized leaf+circuit logo subtly pulses with a gold glow using Framer Motion.",
+      "overlay": "bg-black/50 or bg-gradient-to-r from-black/80 to-black/30"
+    },
+    "buttons": {
+      "primary": "bg-primary text-white hover:bg-primary_hover transition-colors duration-300 rounded-md px-6 py-3 font-medium",
+      "gold_accent": "border border-accent_gold text-accent_gold hover:bg-accent_gold/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all rounded-md px-6 py-3",
+      "dashboard_action": "bg-surface hover:bg-white/10 text-white rounded px-3 py-1.5 text-sm transition-colors border border-border_subtle"
+    },
+    "cards": {
+      "marketing_services": "Relative overflow-hidden rounded-xl border border-border_subtle bg-surface/50 backdrop-blur-sm group hover:border-accent_gold/50 transition-colors duration-500. Add subtle gold gradient blob in background on hover.",
+      "dashboard_widget": "bg-surface rounded-lg border border-border_subtle shadow-sm flex flex-col gap-2"
+    },
+    "ai_chat_ui": {
+      "pattern": "Native dockable sliding panel or full-page route. Do NOT use standard widget blobs. Use a sleek command-center style. Background #111111, border-t border-l border-border_subtle.",
+      "user_bubble": "bg-surface border border-border_subtle text-text_main rounded-2xl rounded-tr-none px-4 py-3",
+      "ai_bubble": "bg-primary/20 border border-primary/30 text-natural_beam rounded-2xl rounded-tl-none px-4 py-3",
+      "input_area": "bg-black border border-border_subtle rounded-xl p-2 focus-within:border-accent_gold transition-colors"
+    },
+    "testing": "All interactive elements (buttons, inputs, chat UI) must have a data-testid attribute using kebab-case role-based naming."
+  },
+  "media": {
+    "image_urls": {
+      "hero_background": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b689bacc-47ed-4197-a8c4-f1e8cd808e1c/images/7b787de3a733a4ee89ac0e1483f5e0124718ac9a867e901285d36eec123b8abc.png",
+        "description": "Dark abstract background with deep forest green gradients, wooden beam textures, and glowing gold circuit lines. For marketing Home page hero.",
+        "category": "hero"
+      },
+      "leaf_tech_logo": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b689bacc-47ed-4197-a8c4-f1e8cd808e1c/images/6873e4108b6e53de2481b3c3e1f1dcc3577dd9d969868378a75cc549506d582e.png",
+        "description": "Minimalist stylized leaf symbol integrated with subtle glowing gold circuit board lines. Use as brand logo.",
+        "category": "logo"
+      },
+      "network_abstract": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b689bacc-47ed-4197-a8c4-f1e8cd808e1c/images/92a209e7e3e071940e24b60440419363a41274996047335a0b049ae8e586404f.png",
+        "description": "Abstract glowing green and gold digital network map. For AI Services / Tech background.",
+        "category": "background"
+      },
+      "server_room_1": {
+        "url": "https://images.pexels.com/photos/5203849/pexels-photo-5203849.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Modern data server room. For Networking & Cable Run service card.",
+        "category": "service_image"
+      },
+      "server_room_2": {
+        "url": "https://images.pexels.com/photos/1181316/pexels-photo-1181316.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Woman in contemporary data center. For System Administration service card.",
+        "category": "service_image"
+      }
+    },
+    "instructions_to_main_agent": "Use the provided image URLs to construct the visual identity. The 'leaf_tech_logo' should be placed in the header and hero. Ensure all backgrounds have appropriate overlays (e.g., bg-black/60) to guarantee text contrast."
+  }
+}
