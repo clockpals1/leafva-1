@@ -293,3 +293,108 @@ class TestChat:
             assert any(t["id"] == ticket_id for t in tickets)
         else:
             pytest.skip("Intake didn't complete within 4 turns - LLM behavior variation")
+
+
+# ---------- Stripe Payments (Round 2) ----------
+class TestStripePayments:
+    invoice_id = None
+    zero_invoice_id = None
+    session_id = None
+    checkout_url = None
+
+    def test_create_invoice_for_stripe(self, auth):
+        """Create a fresh invoice with tax lines for stripe link generation."""
+        payload = {
+            "client_name": "TEST_Stripe_Client",
+            "client_email": "stripe-test@example.com",
+            "tax_rate": 13.0,
+            "lines": [{"description": "Consulting", "qty": 2, "rate": 100, "amount": 0}],
+        }
+        r = auth.post(f"{BASE_URL}/api/invoices", json=payload)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d["subtotal"] == 200.0
+        assert d["tax"] == 26.0
+        assert d["total"] == 226.0
+        TestStripePayments.invoice_id = d["id"]
+
+    def test_generate_payment_link(self, auth):
+        iid = TestStripePayments.invoice_id
+        assert iid, "no invoice id"
+        r = auth.post(
+            f"{BASE_URL}/api/invoices/{iid}/payment-link",
+            json={"origin_url": "https://smart-leaf.preview.emergentagent.com"},
+            timeout=60,
+        )
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d.get("url", "").startswith("https://checkout.stripe.com/"), d
+        assert d.get("session_id", "").startswith("cs_test_"), d
+        TestStripePayments.session_id = d["session_id"]
+        TestStripePayments.checkout_url = d["url"]
+
+    def test_payment_transaction_record_created(self, auth):
+        """After link generation, payment_transactions record should exist with pending status.
+        We verify indirectly via status endpoint which falls back to DB lookup."""
+        sid = TestStripePayments.session_id
+        assert sid
+        r = requests.get(f"{BASE_URL}/api/payments/checkout/status/{sid}", timeout=60)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        # invoice_id should match if the txn record was persisted
+        assert d.get("invoice_id") == TestStripePayments.invoice_id, d
+
+    def test_checkout_status_public_no_auth(self):
+        """GET /api/payments/checkout/status/{id} — no auth, returns Stripe status."""
+        sid = TestStripePayments.session_id
+        assert sid
+        r = requests.get(f"{BASE_URL}/api/payments/checkout/status/{sid}", timeout=60)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        # Fresh unpaid session
+        assert d.get("status") in ("open", "expired"), d
+        assert d.get("payment_status") in ("unpaid", "pending", "no_payment_required"), d
+
+    def test_payment_link_zero_total_400(self, auth):
+        """Invoice with no lines (total=0) — should fail 400."""
+        r = auth.post(f"{BASE_URL}/api/invoices", json={
+            "client_name": "TEST_Zero", "client_email": "z@test.com",
+            "tax_rate": 0.0, "lines": [],
+        })
+        assert r.status_code == 200
+        zid = r.json()["id"]
+        TestStripePayments.zero_invoice_id = zid
+        assert r.json()["total"] == 0.0
+        r2 = auth.post(
+            f"{BASE_URL}/api/invoices/{zid}/payment-link",
+            json={"origin_url": "https://smart-leaf.preview.emergentagent.com"},
+            timeout=60,
+        )
+        assert r2.status_code == 400, r2.text
+
+    def test_payment_link_nonexistent_invoice(self, auth):
+        r = auth.post(
+            f"{BASE_URL}/api/invoices/does-not-exist-xyz/payment-link",
+            json={"origin_url": "https://smart-leaf.preview.emergentagent.com"},
+            timeout=60,
+        )
+        assert r.status_code in (400, 404), r.text
+
+    def test_payment_link_requires_auth(self, api):
+        r = api.post(
+            f"{BASE_URL}/api/invoices/anything/payment-link",
+            json={"origin_url": "https://x"},
+        )
+        assert r.status_code == 401
+
+    def test_webhook_endpoint_wired(self, api):
+        """Endpoint exists — invalid payload should return 400 (not 404)."""
+        r = api.post(f"{BASE_URL}/api/webhook/stripe", data=b"{}", headers={"Content-Type": "application/json"})
+        assert r.status_code != 404, "webhook route not registered"
+        # Should be 400 (invalid signature/payload) or 500
+        assert r.status_code in (400, 500), r.text
+
+    def test_cleanup_stripe_invoices(self, auth):
+        for iid in [TestStripePayments.invoice_id, TestStripePayments.zero_invoice_id]:
+            if iid:
+                auth.delete(f"{BASE_URL}/api/invoices/{iid}")

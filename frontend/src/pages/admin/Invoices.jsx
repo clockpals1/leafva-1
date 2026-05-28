@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, X, Trash2, Send } from "lucide-react";
+import { Plus, X, Trash2, Send, CreditCard, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../lib/api";
 
@@ -133,9 +133,91 @@ export default function Invoices() {
               <Inp label="Notes" v={editing.notes} on={(v) => setEditing({ ...editing, notes: v })} textarea testId="invoice-notes" />
 
               <button onClick={save} className="btn-primary w-full justify-center" data-testid="invoice-save"><Send size={14} /> Save invoice</button>
+
+              {editing.id && <StripePayLinkSection invoice={editing} />}
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function StripePayLinkSection({ invoice }) {
+  const [link, setLink] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const r = await api.post(`/invoices/${invoice.id}/payment-link`, {
+        origin_url: window.location.origin,
+      });
+      setLink(r.data.url);
+      toast.success("Stripe payment link created");
+    } catch (e) {
+      const msg = e?.response?.data?.detail || "Failed to create payment link";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copy = () => {
+    if (!link) return;
+    navigator.clipboard.writeText(link);
+    toast.success("Link copied to clipboard");
+  };
+
+  return (
+    <div className="border-t border-subtle pt-6 mt-2">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs uppercase tracking-widest text-gold flex items-center gap-2">
+          <CreditCard size={14} /> Stripe Payment Link
+        </div>
+        <button
+          onClick={generate}
+          disabled={loading || invoice.status === "paid"}
+          data-testid="invoice-stripe-generate"
+          className="btn-gold text-xs py-1.5 px-3 disabled:opacity-40"
+        >
+          {loading ? "Creating…" : link ? "Regenerate" : "Generate link"}
+        </button>
+      </div>
+      {invoice.status === "paid" ? (
+        <div className="text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-900/40 rounded-lg p-3">
+          Invoice already paid — no link needed.
+        </div>
+      ) : link ? (
+        <div className="space-y-2">
+          <div className="flex items-stretch gap-2">
+            <input
+              readOnly
+              value={link}
+              className="flex-1 bg-black border border-subtle rounded-lg px-3 py-2 text-xs font-mono-leaf text-gold/90 outline-none"
+              data-testid="invoice-stripe-link"
+            />
+            <button onClick={copy} className="btn-gold text-xs px-3" data-testid="invoice-stripe-copy">
+              <Copy size={12} />
+            </button>
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary text-xs px-3"
+              data-testid="invoice-stripe-open"
+            >
+              <ExternalLink size={12} />
+            </a>
+          </div>
+          <p className="text-[11px] text-muted-leaf">
+            Paste this link into an email or share directly. Once paid, the invoice will auto-mark as paid.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-leaf">
+          Generate a secure Stripe Checkout link for <span className="text-gold font-mono-leaf">${Number(invoice.total).toFixed(2)} CAD</span>. The link is one-tap pay (card, Apple Pay, Google Pay).
+        </p>
       )}
     </div>
   );

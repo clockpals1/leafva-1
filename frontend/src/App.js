@@ -9,6 +9,7 @@ import Services from "./pages/Services";
 import Assistant from "./pages/Assistant";
 import Contact from "./pages/Contact";
 import Legal from "./pages/Legal";
+import { PaymentSuccess, PaymentCancel } from "./pages/Payment";
 
 import AdminLogin from "./pages/admin/Login";
 import AdminLayout from "./pages/admin/Layout";
@@ -54,6 +55,8 @@ export default function App() {
 
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/pay/success" element={<PaymentSuccess />} />
+        <Route path="/pay/cancel" element={<PaymentCancel />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="tickets" element={<Tickets />} />

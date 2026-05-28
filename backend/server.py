@@ -20,6 +20,7 @@ from auth import (  # noqa: E402
 from models import AdminUser, LoginRequest, TokenResponse  # noqa: E402
 from routes_chat import router as chat_router  # noqa: E402
 from routes_business import router as admin_router  # noqa: E402
+from routes_payments import router as payments_router  # noqa: E402
 
 app = FastAPI(title="LEAFVA API")
 
@@ -60,6 +61,7 @@ async def auth_me(user: AdminUser = Depends(require_admin)):
 app.include_router(api_router)
 app.include_router(chat_router)
 app.include_router(admin_router)
+app.include_router(payments_router)
 
 app.add_middleware(
     CORSMiddleware,
