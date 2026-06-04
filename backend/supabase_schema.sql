@@ -32,6 +32,7 @@ create table if not exists business_settings (
   resend_api_key       text not null default '',
   resend_sender_email  text not null default 'noreply@leafva.com',
   resend_notify_email  text not null default 'support@leafva.com',
+  groq_api_key         text not null default '',
   ai_provider          text not null default 'groq',
   ai_model             text not null default 'llama-3.3-70b-versatile',
   ai_system_prompt     text not null default '',

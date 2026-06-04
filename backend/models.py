@@ -37,6 +37,7 @@ class BusinessSettings(BaseDocument):
     resend_sender_email: str = "noreply@leafva.com"
     resend_notify_email: str = "support@leafva.com"
     # AI
+    groq_api_key: str = ""
     ai_provider: str = "groq"
     ai_model: str = "llama-3.3-70b-versatile"
     ai_system_prompt: str = (
@@ -68,6 +69,7 @@ class SettingsUpdate(BaseModel):
     resend_api_key: Optional[str] = None
     resend_sender_email: Optional[str] = None
     resend_notify_email: Optional[str] = None
+    groq_api_key: Optional[str] = None
     ai_provider: Optional[str] = None
     ai_model: Optional[str] = None
     ai_system_prompt: Optional[str] = None

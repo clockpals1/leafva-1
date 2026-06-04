@@ -434,6 +434,7 @@ async def email_compose(payload: EmailComposeRequest, _: AdminUser = Depends(req
         recipient_name=payload.recipient_name or "",
         provider=s.ai_provider,
         model=s.ai_model,
+        api_key=s.groq_api_key,
     )
     return EmailComposeResponse(**result)
 

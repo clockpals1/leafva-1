@@ -6,15 +6,16 @@ from typing import Optional
 
 from openai import AsyncOpenAI
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 DEFAULT_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
+# Fallback key from env — only used if the DB setting is empty
+_ENV_GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
 
 INTAKE_MARKER_RE = re.compile(r"\[INTAKE_COMPLETE:\s*(\{.*?\})\s*\]", re.DOTALL)
 
 
-def _get_client() -> AsyncOpenAI:
+def _get_client(api_key: str) -> AsyncOpenAI:
     return AsyncOpenAI(
-        api_key=GROQ_API_KEY,
+        api_key=api_key or _ENV_GROQ_KEY,
         base_url="https://api.groq.com/openai/v1",
     )
 
@@ -26,8 +27,10 @@ async def chat_reply(
     system_prompt: str,
     provider: str = "groq",
     model: str = DEFAULT_MODEL,
+    api_key: str = "",
 ) -> str:
-    if not GROQ_API_KEY:
+    resolved_key = api_key or _ENV_GROQ_KEY
+    if not resolved_key:
         return "AI is currently offline. Please email hello@leafva.com so our team can assist you."
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -36,7 +39,7 @@ async def chat_reply(
     messages.append({"role": "user", "content": user_text})
 
     try:
-        client = _get_client()
+        client = _get_client(resolved_key)
         response = await client.chat.completions.create(
             model=model,
             messages=messages,
@@ -74,9 +77,11 @@ async def compose_email(
     recipient_name: str,
     provider: str = "groq",
     model: str = DEFAULT_MODEL,
+    api_key: str = "",
 ) -> dict:
     """Use LLM to draft a subject + body for a transactional email."""
-    if not GROQ_API_KEY:
+    resolved_key = api_key or _ENV_GROQ_KEY
+    if not resolved_key:
         return {
             "subject": "Update from LEAFVA",
             "body": f"Hello {recipient_name or 'there'},\n\n{context}\n\nBest regards,\nThe LEAFVA Team",
@@ -97,7 +102,7 @@ async def compose_email(
     )
 
     try:
-        client = _get_client()
+        client = _get_client(resolved_key)
         response = await client.chat.completions.create(
             model=model,
             messages=[

@@ -64,6 +64,7 @@ async def post_message(payload: ChatMessageIn):
         system_prompt=settings.ai_system_prompt,
         provider=settings.ai_provider,
         model=settings.ai_model,
+        api_key=settings.groq_api_key,
     )
 
     intake = extract_intake(raw_reply)
