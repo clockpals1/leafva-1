@@ -1,31 +1,21 @@
-"""AI chat helper using Emergent universal LLM key."""
+"""AI chat helper using Groq (open-source models via OpenAI-compatible API)."""
 import os
 import json
 import re
 from typing import Optional
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from openai import AsyncOpenAI
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
-DEFAULT_PROVIDER = os.environ.get("LLM_PROVIDER", "anthropic")
-DEFAULT_MODEL = os.environ.get("LLM_MODEL", "claude-sonnet-4-5-20250929")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+DEFAULT_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
 
 INTAKE_MARKER_RE = re.compile(r"\[INTAKE_COMPLETE:\s*(\{.*?\})\s*\]", re.DOTALL)
 
 
-def _build_context_prompt(messages: list, new_user_message: str) -> str:
-    """Render full conversation history into a single prompt for stateless instance."""
-    if not messages:
-        return new_user_message
-    lines = []
-    for m in messages:
-        role = "User" if m.get("role") == "user" else "Assistant"
-        lines.append(f"{role}: {m.get('content', '')}")
-    history = "\n".join(lines)
-    return (
-        f"Conversation so far:\n{history}\n\n"
-        f"User just said: {new_user_message}\n\n"
-        f"Reply now as the LEAFVA assistant."
+def _get_client() -> AsyncOpenAI:
+    return AsyncOpenAI(
+        api_key=GROQ_API_KEY,
+        base_url="https://api.groq.com/openai/v1",
     )
 
 
@@ -34,20 +24,26 @@ async def chat_reply(
     history: list,
     user_text: str,
     system_prompt: str,
-    provider: str = DEFAULT_PROVIDER,
+    provider: str = "groq",
     model: str = DEFAULT_MODEL,
 ) -> str:
-    if not EMERGENT_LLM_KEY:
+    if not GROQ_API_KEY:
         return "AI is currently offline. Please email hello@leafva.com so our team can assist you."
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=session_id,
-        system_message=system_prompt,
-    ).with_model(provider, model)
-    composed = _build_context_prompt(history, user_text)
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for m in history:
+        messages.append({"role": m.get("role", "user"), "content": m.get("content", "")})
+    messages.append({"role": "user", "content": user_text})
+
     try:
-        reply = await chat.send_message(UserMessage(text=composed))
-        return str(reply).strip()
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.7,
+        )
+        return response.choices[0].message.content.strip()
     except Exception as e:
         return f"AI is temporarily unavailable: {str(e)[:120]}. Please try again shortly."
 
@@ -76,37 +72,42 @@ async def compose_email(
     tone: str,
     purpose: str,
     recipient_name: str,
-    provider: str = DEFAULT_PROVIDER,
+    provider: str = "groq",
     model: str = DEFAULT_MODEL,
 ) -> dict:
     """Use LLM to draft a subject + body for a transactional email."""
-    sys = (
+    if not GROQ_API_KEY:
+        return {
+            "subject": "Update from LEAFVA",
+            "body": f"Hello {recipient_name or 'there'},\n\n{context}\n\nBest regards,\nThe LEAFVA Team",
+        }
+
+    sys_prompt = (
         "You are an email writing assistant for LEAFVA, a premium IT services company. "
         "Write polished, concise, professional emails. Output strictly as JSON with keys "
         '"subject" and "body". The body should be plain text with paragraph breaks. '
         "Sign off as 'The LEAFVA Team'."
     )
-    prompt = (
+    user_prompt = (
         f"Purpose: {purpose}\n"
         f"Tone: {tone}\n"
         f"Recipient name: {recipient_name or 'Customer'}\n"
         f"Context to base the email on:\n{context}\n\n"
         "Return JSON only."
     )
-    if not EMERGENT_LLM_KEY:
-        return {
-            "subject": "Update from LEAFVA",
-            "body": f"Hello {recipient_name or 'there'},\n\n{context}\n\nBest regards,\nThe LEAFVA Team",
-        }
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"compose-{os.urandom(4).hex()}",
-        system_message=sys,
-    ).with_model(provider, model)
+
     try:
-        raw = await chat.send_message(UserMessage(text=prompt))
-        raw = str(raw).strip()
-        # extract JSON block
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=1024,
+            temperature=0.5,
+        )
+        raw = response.choices[0].message.content.strip()
         m = re.search(r"\{.*\}", raw, re.DOTALL)
         if m:
             data = json.loads(m.group(0))

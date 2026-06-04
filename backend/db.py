@@ -1,22 +1,10 @@
-"""MongoDB helpers and base model."""
+"""Supabase helpers and base model."""
 import os
 from datetime import datetime, timezone
-from typing import Annotated, Any, Optional
-from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from typing import Optional
+from supabase import AsyncClient, create_async_client
+from pydantic import BaseModel, ConfigDict, Field
 import uuid
-
-
-def _validate_object_id(v: Any) -> str:
-    if isinstance(v, ObjectId):
-        return str(v)
-    if isinstance(v, str):
-        return v
-    raise ValueError("Invalid ObjectId")
-
-
-PyObjectId = Annotated[str, BeforeValidator(_validate_object_id)]
 
 
 def utcnow_iso() -> str:
@@ -28,31 +16,36 @@ def new_uuid() -> str:
 
 
 class BaseDocument(BaseModel):
-    """Base model: uses uuid string id stored as `id` (not _id)."""
+    """Base model with UUID string id."""
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     id: str = Field(default_factory=new_uuid)
     created_at: str = Field(default_factory=utcnow_iso)
     updated_at: str = Field(default_factory=utcnow_iso)
 
-    def to_mongo(self) -> dict:
-        d = self.model_dump()
-        return d
+    def to_db(self) -> dict:
+        return self.model_dump()
 
     @classmethod
-    def from_mongo(cls, doc: Optional[dict]):
+    def from_db(cls, doc: Optional[dict]):
         if not doc:
             return None
-        doc = dict(doc)
-        doc.pop("_id", None)
         return cls(**doc)
 
 
-_client: Optional[AsyncIOMotorClient] = None
+_client: Optional[AsyncClient] = None
 
 
-def get_db():
+async def get_db() -> AsyncClient:
     global _client
     if _client is None:
-        _client = AsyncIOMotorClient(os.environ["MONGO_URL"])
-    return _client[os.environ["DB_NAME"]]
+        _client = await create_async_client(
+            os.environ["SUPABASE_URL"],
+            os.environ["SUPABASE_SERVICE_KEY"],
+        )
+    return _client
+
+
+async def close_db():
+    global _client
+    _client = None

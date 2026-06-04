@@ -52,11 +52,12 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
     payload = decode_token(credentials.credentials)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
-    db = get_db()
-    doc = await db.admin_users.find_one({"id": payload["sub"]})
+    sb = await get_db()
+    result = await sb.table("admin_users").select("*").eq("id", payload["sub"]).execute()
+    doc = result.data[0] if result.data else None
     if not doc:
         raise HTTPException(status_code=401, detail="User not found")
-    user = AdminUser.from_mongo(doc)
+    user = AdminUser.from_db(doc)
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Forbidden")
     return user
@@ -64,15 +65,15 @@ async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bear
 
 async def seed_admin():
     """Idempotently create default admin user."""
-    db = get_db()
+    sb = await get_db()
     default_email = "admin@leafva.com"
     default_password = "LeafvaAdmin@2026"
-    existing = await db.admin_users.find_one({"email": default_email})
-    if existing:
+    existing = await sb.table("admin_users").select("id").eq("email", default_email).execute()
+    if existing.data:
         return
     user = AdminUser(
         email=default_email,
         name="LEAFVA Admin",
         password_hash=hash_password(default_password),
     )
-    await db.admin_users.insert_one(user.to_mongo())
+    await sb.table("admin_users").insert(user.to_db()).execute()

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CornerDownLeft, CheckCircle2 } from "lucide-react";
 import { chat } from "../lib/api";
 
-const NETWORK_BG = "https://static.prod-images.emergentagent.com/jobs/b689bacc-47ed-4197-a8c4-f1e8cd808e1c/images/92a209e7e3e071940e24b60440419363a41274996047335a0b049ae8e586404f.png";
+const NETWORK_BG = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1920&q=80";
 
 /**
  * Reusable AI chat panel — premium pill-bubble design with smooth motion.

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Cpu, Network, Wrench, Code2, ServerCog, Briefcase, Sparkles } from "lucide-react";
 import Logo from "../components/Logo";
 
-const HERO_BG = "https://static.prod-images.emergentagent.com/jobs/b689bacc-47ed-4197-a8c4-f1e8cd808e1c/images/7b787de3a733a4ee89ac0e1483f5e0124718ac9a867e901285d36eec123b8abc.png";
-const NETWORK_BG = "https://static.prod-images.emergentagent.com/jobs/b689bacc-47ed-4197-a8c4-f1e8cd808e1c/images/92a209e7e3e071940e24b60440419363a41274996047335a0b049ae8e586404f.png";
+const HERO_BG = "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80";
+const NETWORK_BG = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1920&q=80";
 
 const SERVICES = [
   { icon: Wrench, title: "IT Support", desc: "Round-the-clock support for the workstations and stack that keep your business breathing." },

@@ -10,7 +10,7 @@ from starlette.middleware.cors import CORSMiddleware
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-from db import get_db  # noqa: E402
+from db import get_db, close_db  # noqa: E402
 from auth import (  # noqa: E402
     create_token,
     require_admin,
@@ -39,11 +39,12 @@ async def health():
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(payload: LoginRequest):
-    db = get_db()
-    doc = await db.admin_users.find_one({"email": payload.email.lower().strip()})
+    sb = await get_db()
+    result = await sb.table("admin_users").select("*").eq("email", payload.email.lower().strip()).execute()
+    doc = result.data[0] if result.data else None
     if not doc:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    user = AdminUser.from_mongo(doc)
+    user = AdminUser.from_db(doc)
     if not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_token(user.id, user.email)
@@ -88,4 +89,5 @@ async def on_startup():
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    await close_db()
     logger.info("LEAFVA backend stopping.")

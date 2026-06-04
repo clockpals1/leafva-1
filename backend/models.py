@@ -37,8 +37,8 @@ class BusinessSettings(BaseDocument):
     resend_sender_email: str = "noreply@leafva.com"
     resend_notify_email: str = "support@leafva.com"
     # AI
-    ai_provider: str = "anthropic"
-    ai_model: str = "claude-sonnet-4-5-20250929"
+    ai_provider: str = "groq"
+    ai_model: str = "llama-3.3-70b-versatile"
     ai_system_prompt: str = (
         "You are the LEAFVA AI Assistant — a premium, professional intake agent for "
         "LEAFVA, an Ontario-registered IT services company. You handle leads with "
@@ -71,6 +71,7 @@ class SettingsUpdate(BaseModel):
     ai_provider: Optional[str] = None
     ai_model: Optional[str] = None
     ai_system_prompt: Optional[str] = None
+
 
 
 # ---------- Chat ----------

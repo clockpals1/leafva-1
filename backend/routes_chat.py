@@ -1,4 +1,5 @@
 """Public chat endpoints (no auth)."""
+import json
 from fastapi import APIRouter, HTTPException
 
 from db import get_db, utcnow_iso
@@ -18,38 +19,36 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 @router.post("/start", response_model=ChatSession)
 async def start_chat():
     """Create a new chat session with a greeting."""
-    db = get_db()
-    settings = await get_settings()
+    sb = await get_db()
     greeting = (
         "Welcome to LEAFVA — IT Intelligence, Powered by Nature and Technology. "
         "Tell me what you need today, and I will route it to the right team."
     )
     session = ChatSession(messages=[ChatMessage(role="assistant", content=greeting)])
-    await db.chat_sessions.insert_one(session.to_mongo())
+    await sb.table("chat_sessions").insert(session.to_db()).execute()
     return session
 
 
 @router.get("/session/{session_id}", response_model=ChatSession)
 async def get_session(session_id: str):
-    db = get_db()
-    doc = await db.chat_sessions.find_one({"id": session_id})
-    if not doc:
+    sb = await get_db()
+    result = await sb.table("chat_sessions").select("*").eq("id", session_id).execute()
+    if not result.data:
         raise HTTPException(status_code=404, detail="Session not found")
-    return ChatSession.from_mongo(doc)
+    return ChatSession.from_db(result.data[0])
 
 
 @router.post("/message", response_model=ChatMessageOut)
 async def post_message(payload: ChatMessageIn):
-    db = get_db()
+    sb = await get_db()
     settings = await get_settings()
 
     # Get or create session
-    session: ChatSession
     if payload.session_id:
-        doc = await db.chat_sessions.find_one({"id": payload.session_id})
-        if not doc:
+        result = await sb.table("chat_sessions").select("*").eq("id", payload.session_id).execute()
+        if not result.data:
             raise HTTPException(status_code=404, detail="Session not found")
-        session = ChatSession.from_mongo(doc)
+        session = ChatSession.from_db(result.data[0])
     else:
         session = ChatSession()
 
@@ -74,7 +73,6 @@ async def post_message(payload: ChatMessageIn):
 
     ticket_id = session.ticket_id
     if intake and not session.intake_complete:
-        # Create a ticket
         ticket = Ticket(
             name=intake.get("name", ""),
             email=intake.get("email", ""),
@@ -84,16 +82,14 @@ async def post_message(payload: ChatMessageIn):
             details=intake.get("details", ""),
             chat_session_id=session.id,
         )
-        # Normalize urgency
         if ticket.urgency not in ("low", "medium", "high", "emergency"):
             ticket.urgency = "medium"
-        await db.tickets.insert_one(ticket.to_mongo())
+        await sb.table("tickets").insert(ticket.to_db()).execute()
         ticket_id = ticket.id
         session.ticket_id = ticket_id
         session.intake_complete = True
         session.intake_data = intake
 
-        # Try sending confirmation email + notification
         confirm_body = (
             f"Hello {ticket.name},\n\n"
             f"Thank you for reaching out to LEAFVA. We have received your request and "
@@ -124,12 +120,12 @@ async def post_message(payload: ChatMessageIn):
                 related_ticket_id=ticket.id,
             )
 
-    # Persist updated session
-    await db.chat_sessions.update_one(
-        {"id": session.id},
-        {"$set": session.to_mongo()},
-        upsert=True,
-    )
+    # Persist updated session (upsert)
+    session_data = session.to_db()
+    # Supabase needs JSON-serialisable messages list
+    session_data["messages"] = json.dumps([m.model_dump() for m in session.messages])
+    session_data["intake_data"] = json.dumps(session.intake_data) if session.intake_data else None
+    await sb.table("chat_sessions").upsert(session_data).execute()
 
     return ChatMessageOut(
         session_id=session.id,
